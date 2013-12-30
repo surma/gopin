@@ -8,20 +8,64 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/garyburd/redigo/redis"
+	"github.com/surma/httptools"
+	"github.com/voxelbrain/goptions"
 )
 
 var (
-	cache = map[string]bool{}
+	options = struct {
+		Listen        string        `goptions:"-l, --listen, description='Address to bind webserver to'"`
+		Hostname      string        `goptions:"-h, --hostname, description='Hostname of this instance of gopin'"`
+		Redis         *url.URL      `goptions:"-r, --redis, description='URL of Redis database'"`
+		CacheDuration time.Duration `goptions:"-c, --cache, description='Duration to cache requested repo URLs'"`
+		Static        string        `goptions:"--static, description='Path to static content directory'"`
+		Help          goptions.Help `goptions:"-h, --help, description='Show this help'"`
+	}{
+		Listen:        "localhost:8081",
+		CacheDuration: 5 * time.Minute,
+		Static:        "./static",
+	}
 )
 
 func main() {
-	http.Handle("/", http.HandlerFunc(handler))
-	err := http.ListenAndServe("localhost:8081", nil)
-	if err != nil {
+	goptions.ParseAndFail(&options)
+
+	cache := setupCache()
+	http.Handle("/github.com/", http.StripPrefix("/github.com", NewGithub(cache)))
+	http.handle("/", GoGetRouter{
+		GoGet: listCacheHandler(cache),
+		Else:  http.FileServer(http.Dir(options.Static)),
+	})
+	if err := http.ListenAndServe(options.Listen, nil); err != nil {
 		log.Fatalf("Could not bind to port: %s", err)
 	}
+}
+
+func setupCache() Cache {
+	if options.Redis == nil {
+		return &MemoryCache{}
+	}
+
+	rdb, err := redis.Dial("tcp", options.Redis.Host)
+	if err != nil {
+		log.Fatalf("Could not connect to redis at %s: %s", options.Redis.Host, err)
+	}
+
+	if options.RedisAddr.User != nil {
+		pw, _ := options.RedisAddr.User.Password()
+		_, err := db.Do("AUTH", pw)
+		if err != nil {
+			log.Fatalf("Could not authenticate to redis at %s: %s", options.Redis.Host, err)
+		}
+	}
+	// FIXME: Actually use redis
+	return &MemoryCache{}
 }
 
 var (
@@ -106,4 +150,14 @@ func injectHead(r io.Reader, hash, head string) (io.Reader, error) {
 		buf.Write([]byte(line))
 	}
 	return io.MultiReader(bytes.NewReader(buf.Bytes()), br), nil
+}
+
+func listCacheHandler(c CachedMap) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "<head>")
+		for item := range c.Iter() {
+			fmt.Fprintf(w, `<meta name="go-import" content="%[1]s%[2]s git http://%[1]s%[3]s">`, r.Host, item.Key, item.Value)
+		}
+		fmt.Fprintf(w, "</head>")
+	})
 }
