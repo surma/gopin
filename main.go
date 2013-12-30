@@ -12,6 +12,10 @@ import (
 	"strings"
 )
 
+var (
+	cache = map[string]bool{}
+)
+
 func main() {
 	http.Handle("/", http.HandlerFunc(handler))
 	err := http.ListenAndServe("localhost:8081", nil)
@@ -25,9 +29,25 @@ var (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" {
+		fmt.Fprintf(w, "<head>")
+		for meta, _ := range cache {
+			fmt.Fprintf(w, meta)
+		}
+		fmt.Fprintf(w, "</head>")
+		return
+	}
+
 	p := knownPattern.FindStringSubmatch(r.URL.Path)
 	if p == nil || len(p) == 0 {
 		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+
+	if (p[4] == "" || p[4] == "/") && r.URL.RawQuery == "go-get=1" {
+		meta := fmt.Sprintf(`<meta name="go-import" content="gopin.localtest.me%[1]s git http://gopin.localtest.me%[1]s">`, r.URL.Path)
+		cache[meta] = true
+		io.WriteString(w, "<head>"+meta+"</head>")
 		return
 	}
 
