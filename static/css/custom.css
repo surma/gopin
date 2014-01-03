@@ -1,2 +1,26 @@
+.diff.diff-addition {
+	padding: 1px 2px;
+	color: rgba(0, 64, 0, 1.0);
+	background-color: rgba(0, 128, 0, 0.4);
+	border-radius: 4px;
+}
 
+pre[data-lang=go] {
+	position: relative;
+	display: block;
+}
 
+pre[data-lang=go]:after {
+	content: 'GO';
+	display: block;
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 3em;
+	height: 2em;
+	line-height: 2em;
+	text-align: center;
+	vertical-align: middle;
+	background-color: rgba(0, 0, 0, 0.3);
+	border-bottom-left-radius: 4px;
+}
