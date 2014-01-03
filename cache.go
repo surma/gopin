@@ -1,6 +1,9 @@
 package main
 
 import (
+	"github.com/garyburd/redigo/redis"
+	"log"
+	"strings"
 	"sync"
 	"time"
 )
@@ -23,17 +26,9 @@ type MemoryCache struct {
 
 func NewMemoryCache() *MemoryCache {
 	mc := &MemoryCache{}
-	mc.init()
+	mc.cache = make(map[string]string)
+	mc.Mutex = &sync.Mutex{}
 	return mc
-}
-
-func (mc *MemoryCache) init() {
-	if mc.cache == nil {
-		mc.cache = make(map[string]string)
-	}
-	if mc.Mutex == nil {
-		mc.Mutex = &sync.Mutex{}
-	}
 }
 
 func (mc *MemoryCache) Add(ci CacheItem) {
@@ -51,14 +46,63 @@ func (mc *MemoryCache) Add(ci CacheItem) {
 func (mc *MemoryCache) Iter() <-chan CacheItem {
 	c := make(chan CacheItem)
 	go func() {
+		defer close(c)
 		for k, v := range mc.cache {
 			c <- CacheItem{k, v}
 		}
-		close(c)
 	}()
 	return c
 }
 
 func (mc *MemoryCache) SetCacheDuration(d time.Duration) {
 	mc.cacheDuration = d
+}
+
+type RedisCache struct {
+	rdb           redis.Conn
+	cacheDuration time.Duration
+}
+
+func NewRedisCache(rdb redis.Conn) *RedisCache {
+	return &RedisCache{
+		rdb: rdb,
+	}
+}
+
+func (rc *RedisCache) Add(ci CacheItem) {
+	key := "cacheitem:" + ci.ImportPath
+	_, err := rc.rdb.Do("SET", key, ci.RepoUrl)
+	if err != nil {
+		log.Printf("Could not add cache item: %s", err)
+	}
+	_, err = rc.rdb.Do("EXPIRE", key, int(rc.cacheDuration/time.Second))
+	if err != nil {
+		log.Printf("Could not expire cache item: %s", err)
+	}
+}
+
+func (rc *RedisCache) Iter() <-chan CacheItem {
+	c := make(chan CacheItem)
+	go func() {
+		defer close(c)
+		resp, err := redis.Values(rc.rdb.Do("KEYS", "cacheitem:*"))
+		if err != nil {
+			log.Printf("Could not get keys: %s", err)
+		}
+		var keys []string
+		redis.ScanSlice(resp, &keys)
+		for _, key := range keys {
+			value, err := redis.String(rc.rdb.Do("GET", key))
+			if err != nil {
+				log.Printf("Could not get key's value: %s", err)
+				continue
+			}
+			c <- CacheItem{strings.TrimPrefix(key, "cacheitem:"), value}
+		}
+	}()
+	return c
+}
+
+func (rc *RedisCache) SetCacheDuration(d time.Duration) {
+	rc.cacheDuration = d
 }

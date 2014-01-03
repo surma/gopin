@@ -38,6 +38,7 @@ func main() {
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		RenderGoImportMeta(w, r, cache.Iter())
 	}))
+	log.Printf("Running webserver...")
 	if err := http.ListenAndServe(options.Listen, nil); err != nil {
 		log.Fatalf("Could not bind to port: %s", err)
 	}
@@ -45,6 +46,7 @@ func main() {
 
 func setupCache() Cache {
 	if options.Redis == nil {
+		log.Printf("USING MEMORY CACHE!")
 		return NewMemoryCache()
 	}
 
@@ -60,8 +62,14 @@ func setupCache() Cache {
 			log.Fatalf("Could not authenticate to redis at %s: %s", options.Redis.Host, err)
 		}
 	}
+
+	_, err = rdb.Do("RANDOMKEY")
+	if err != nil {
+		log.Fatalf("Could not run against redis: %s", err)
+	}
+
 	// FIXME: Actually use redis
-	return NewMemoryCache()
+	return NewRedisCache(rdb)
 }
 
 func injectHead(r io.Reader, hash, head string) (io.Reader, error) {
