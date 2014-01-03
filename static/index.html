@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GoPin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <link href="css/bootstrap-theme.min.css" rel="stylesheet" media="screen">
+  <link href="css/custom.css" rel="stylesheet" media="screen">
+
+</head>
+<body>
+  <div class="container">
+  <div class="page-header">
+        <h1>GoPin <small>Tool-less version pinning for Go</small></h1>
+  </div>
+    <div class="jumbotron">
+      <div class="container">
+        <p>
+          Ever used a package by some idiot who doesn't maintain
+          backwards-compatibility?
+        </p>
+        <pre data-lang="go"><b class="text-warning">import</b> (
+    "github.com/surma/httptools"
+) </pre>
+    <p class="text-center" style="font-weight: bold; font-size: 200%;">↓</p>
+    <p>Pin it to the commit you have been using!</p>
+    <pre data-lang="go"><b class="text-warning">import</b> (
+    "<span class="label label-success">gopin.org/</span>github.com/surma/httptools<span class="label label-success">/ef4a90a9c9a90152e154fa8ba46cc8858f3476ec</span>"
+) </pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/jquery.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+</body>
+</html>
