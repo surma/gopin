@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GoPin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+  <link href="css/bootstrap-theme.min.css" rel="stylesheet" media="screen">
+  <link href="css/custom.css" rel="stylesheet" media="screen">
+
+</head>
+<body>
+  <div class="container">
+  <div class="page-header">
+        <h1>GoPin <small>Tool-less version pinning for Go</small></h1>
+  </div>
+    <div class="jumbotron">
+      <div class="container">
+        <p>
+          Ever used a package by some idiot who doesn't maintain
+          backwards-compatibility?
+        </p>
+        <pre data-lang="go"><b class="text-warning">import</b> (
+    "github.com/surma/httptools"
+) </pre>
+    <p class="text-center" style="font-weight: bold; font-size: 200%;">↓</p>
+    <p>Pin it to the commit you have developed against!</p>
+    <pre data-lang="go"><b class="text-warning">import</b> (
+    "<strong class="text-danger">gopin.org/</strong>github.com/surma/httptools<strong class="text-danger">/ef4a90a9c9a90152e154fa8ba46cc8858f3476ec</strong>"
+) </pre>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Important facts</h3>
+          </div>
+          <div class="panel-body">
+          <p><b>The good:</b></p>
+            <ul>
+              <li>GoPin is <a href="https://github.com/surma/gopin">open source</a> and MIT licensed</li>
+              <li>No local tools are needed</li>
+              <li>Your projects remain <code>go get</code>-able</li>
+              <li>No additional strain on the maintainer’s or the user’s side</li>
+            </ul>
+          <p><b>The bad:</b></p>
+          <ul>
+            <li>Only Github is supported (others soon™)</li>
+            <li>Only <em>full</em> commit hashes are supported (short hashes and tags soon™)</li>
+          </ul>
+         <p><b>The ugly:</b></p>
+          <ul>
+            <li>GoPin will create a new clone for each pinned import in your <code>$GOPATH</code></li>
+            <li>GoPin will not work with private repositories (but neither does <code>go get</code>)</li>
+          </ul>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">How does it work?</h3>
+          </div>
+          <div class="panel-body">
+            <p>GoPin acts as a man in the middle between the <code>go</code> tool and
+            Github. It parses the data stream while the repository is being cloned.
+            When the position of the <code>master</code> branch is being transmitted,
+            GoPin injects the given hash.</p>
+            <p>Beacuse <code>gopin.org</code> is not a natively supported VCS hoster,
+            the <a href="http://golang.org/cmd/go/#hdr-Remote_import_path_syntax">custom remote import</a>
+            feature is used to make the <code>go</code> tool behave just the same.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>GoPin 0.0.0, © 2013-2014 <a href="http://github.com/surma">Alexander “surma” Surma</a></footer>
+
+  </div>
+
+  <script src="js/jquery.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+</body>
+</html>

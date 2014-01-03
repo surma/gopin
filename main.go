@@ -34,9 +34,15 @@ func main() {
 
 	cache := setupCache()
 	cache.SetCacheDuration(options.CacheDuration)
+	staticHandler := http.FileServer(http.Dir(options.Static))
+
 	http.Handle("/github.com/", http.StripPrefix("/github.com", NewGithub(cache)))
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		RenderGoImportMeta(w, r, cache.Iter())
+		if r.URL.Query().Get("go-get") == "1" {
+			RenderGoImportMeta(w, r, cache.Iter())
+			return
+		}
+		staticHandler.ServeHTTP(w, r)
 	}))
 	log.Printf("Running webserver...")
 	if err := http.ListenAndServe(options.Listen, nil); err != nil {
