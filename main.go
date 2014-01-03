@@ -3,91 +3,73 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"regexp"
+	"net/url"
 	"strings"
+	"time"
+
+	"github.com/garyburd/redigo/redis"
+	"github.com/voxelbrain/goptions"
 )
 
 var (
-	cache = map[string]bool{}
+	options = struct {
+		Listen        string        `goptions:"-l, --listen, description='Address to bind webserver to'"`
+		Redis         *url.URL      `goptions:"-r, --redis, description='URL of Redis database'"`
+		CacheDuration time.Duration `goptions:"-c, --cache, description='Duration to cache requested repo URLs'"`
+		Static        string        `goptions:"--static, description='Path to static content directory'"`
+		Help          goptions.Help `goptions:"-h, --help, description='Show this help'"`
+	}{
+		Listen:        "localhost:8081",
+		CacheDuration: 5 * time.Minute,
+		Static:        "./static",
+	}
 )
 
 func main() {
-	http.Handle("/", http.HandlerFunc(handler))
-	err := http.ListenAndServe("localhost:8081", nil)
-	if err != nil {
+	goptions.ParseAndFail(&options)
+
+	cache := setupCache()
+	cache.SetCacheDuration(options.CacheDuration)
+	http.Handle("/github.com/", http.StripPrefix("/github.com", NewGithub(cache)))
+	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		RenderGoImportMeta(w, r, cache.Iter())
+	}))
+	log.Printf("Running webserver...")
+	if err := http.ListenAndServe(options.Listen, nil); err != nil {
 		log.Fatalf("Could not bind to port: %s", err)
 	}
 }
 
-var (
-	knownPattern = regexp.MustCompilePOSIX("^/github.com/([^/]+)/([^/]+)/([0-9a-f]+)(/.+)?$")
-)
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/" {
-		fmt.Fprintf(w, "<head>")
-		for meta, _ := range cache {
-			fmt.Fprintf(w, meta)
-		}
-		fmt.Fprintf(w, "</head>")
-		return
+func setupCache() Cache {
+	if options.Redis == nil {
+		log.Printf("USING MEMORY CACHE!")
+		return NewMemoryCache()
 	}
 
-	p := knownPattern.FindStringSubmatch(r.URL.Path)
-	if p == nil || len(p) == 0 {
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
-
-	if (p[4] == "" || p[4] == "/") && r.URL.RawQuery == "go-get=1" {
-		meta := fmt.Sprintf(`<meta name="go-import" content="gopin.localtest.me%[1]s git http://gopin.localtest.me%[1]s">`, r.URL.Path)
-		cache[meta] = true
-		io.WriteString(w, "<head>"+meta+"</head>")
-		return
-	}
-
-	sc, err := tls.Dial("tcp4", "github.com:443", &tls.Config{
-		ServerName: "github.com",
-	})
+	rdb, err := redis.Dial("tcp", options.Redis.Host)
 	if err != nil {
-		log.Printf("Could not open TLS connection to github.com: %s", err)
-		http.Error(w, "Not Found", http.StatusNotFound)
-		return
+		log.Fatalf("Could not connect to redis at %s: %s", options.Redis.Host, err)
 	}
-	defer sc.Close()
 
-	cc, _, err := w.(http.Hijacker).Hijack()
-	if err != nil {
-		log.Printf("Could not hijack connection: %s", err)
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
-	defer cc.Close()
-
-	r.URL.Host = "github.com"
-	r.URL.Path = fmt.Sprintf("/%s/%s%s", p[1], p[2], p[4])
-	r.Header.Set("Host", "github.com")
-	r.Host = "github.com"
-	r.Write(sc)
-
-	go io.Copy(sc, cc)
-
-	scr := io.Reader(sc)
-	if p[4] == "/info/refs" {
-		scr, err = injectHead(scr, p[3], "master")
+	if options.Redis.User != nil {
+		pw, _ := options.Redis.User.Password()
+		_, err := rdb.Do("AUTH", pw)
 		if err != nil {
-			log.Printf("Could not inject HEAD: %s", err)
-			http.Error(w, "Not found", http.StatusNotFound)
-			return
+			log.Fatalf("Could not authenticate to redis at %s: %s", options.Redis.Host, err)
 		}
 	}
-	go io.Copy(sc, cc)
-	io.Copy(cc, scr)
+
+	_, err = rdb.Do("RANDOMKEY")
+	if err != nil {
+		log.Fatalf("Could not run against redis: %s", err)
+	}
+
+	// FIXME: Actually use redis
+	return NewRedisCache(rdb)
 }
 
 func injectHead(r io.Reader, hash, head string) (io.Reader, error) {
