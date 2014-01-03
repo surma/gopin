@@ -6,7 +6,7 @@ import (
 )
 
 type Cache interface {
-	Add(importPath, repoUrl string)
+	Add(c CacheItem)
 	Iter() <-chan CacheItem
 	SetCacheDuration(d time.Duration)
 }
@@ -21,6 +21,12 @@ type MemoryCache struct {
 	*sync.Mutex
 }
 
+func NewMemoryCache() *MemoryCache {
+	mc := &MemoryCache{}
+	mc.init()
+	return mc
+}
+
 func (mc *MemoryCache) init() {
 	if mc.cache == nil {
 		mc.cache = make(map[string]string)
@@ -30,17 +36,16 @@ func (mc *MemoryCache) init() {
 	}
 }
 
-func (mc *MemoryCache) Add(importPath, repoUrl string) {
-	mc.init()
+func (mc *MemoryCache) Add(ci CacheItem) {
 	mc.Lock()
 	defer mc.Unlock()
 	go func() {
 		time.Sleep(mc.cacheDuration)
 		mc.Lock()
 		defer mc.Unlock()
-		delete(mc.cache, importPath)
+		delete(mc.cache, ci.ImportPath)
 	}()
-	mc.cache[importPath] = repoUrl
+	mc.cache[ci.ImportPath] = ci.RepoUrl
 }
 
 func (mc *MemoryCache) Iter() <-chan CacheItem {
@@ -49,6 +54,7 @@ func (mc *MemoryCache) Iter() <-chan CacheItem {
 		for k, v := range mc.cache {
 			c <- CacheItem{k, v}
 		}
+		close(c)
 	}()
 	return c
 }
