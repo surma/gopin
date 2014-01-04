@@ -5,13 +5,14 @@
 	border-radius: 4px;
 }
 
-pre[data-lang=go] {
+pre[data-lang] {
 	position: relative;
 	display: block;
 }
 
-pre[data-lang=go]:after {
-	content: 'GO';
+pre[data-lang]:after {
+	content: attr(data-lang);
+	text-transform: uppercase;
 	display: block;
 	position: absolute;
 	right: 0;
@@ -23,4 +24,5 @@ pre[data-lang=go]:after {
 	vertical-align: middle;
 	background-color: rgba(0, 0, 0, 0.3);
 	border-bottom-left-radius: 4px;
+	border-top-right-radius: 4px;
 }
