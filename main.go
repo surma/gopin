@@ -74,7 +74,6 @@ func setupCache() Cache {
 		log.Fatalf("Could not run against redis: %s", err)
 	}
 
-	// FIXME: Actually use redis
 	return NewRedisCache(rdb)
 }
 
