@@ -10,19 +10,21 @@ pre[data-lang] {
 	display: block;
 }
 
-pre[data-lang]:after {
-	content: attr(data-lang);
-	text-transform: uppercase;
+*::selection {
+	background-color: rgba(0, 0, 0, 0.2);
+}
+
+pre[data-lang]::after {
 	display: block;
 	position: absolute;
 	right: 0;
 	top: 0;
-	width: 3em;
-	height: 2em;
-	line-height: 2em;
-	text-align: center;
-	vertical-align: middle;
+	padding: 0.5em 1em;
 	background-color: rgba(0, 0, 0, 0.3);
 	border-bottom-left-radius: 4px;
 	border-top-right-radius: 4px;
+
+	content: attr(data-lang);
+	text-transform: uppercase;
+	text-align: center;
 }
