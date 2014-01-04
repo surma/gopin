@@ -41,7 +41,7 @@ func (g *Github) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("go-get") == "1" {
 		ci := CacheItem{
 			ImportPath: importPath,
-			RepoUrl:    path.Join("github.com", repo, hash),
+			RepoUrl:    path.Join("/github.com", repo, hash),
 		}
 		g.cache.Add(ci)
 		RenderSingleGoImportMeta(w, r, ci)

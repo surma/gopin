@@ -1,11 +1,15 @@
 package main
 
 import (
-	"github.com/garyburd/redigo/redis"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"io"
 	"log"
-	"strings"
 	"sync"
 	"time"
+
+	"github.com/garyburd/redigo/redis"
 )
 
 type Cache interface {
@@ -15,7 +19,14 @@ type Cache interface {
 }
 
 type CacheItem struct {
-	ImportPath, RepoUrl string
+	ImportPath string `json:"import_path"`
+	RepoUrl    string `json:"repo_url"`
+}
+
+func (c CacheItem) Hash() string {
+	h := sha256.New()
+	io.WriteString(h, c.ImportPath)
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 type MemoryCache struct {
@@ -70,14 +81,21 @@ func NewRedisCache(rdb redis.Conn) *RedisCache {
 }
 
 func (rc *RedisCache) Add(ci CacheItem) {
-	key := "cacheitem:" + ci.ImportPath
-	_, err := rc.rdb.Do("SET", key, ci.RepoUrl)
+	key := "cacheitem:" + ci.Hash()
+	payload, err := json.Marshal(ci)
+	if err != nil {
+		log.Printf("Could not marshal cache item: %s", err)
+		return
+	}
+	_, err = rc.rdb.Do("SET", key, payload)
 	if err != nil {
 		log.Printf("Could not add cache item: %s", err)
+		return
 	}
 	_, err = rc.rdb.Do("EXPIRE", key, int(rc.cacheDuration/time.Second))
 	if err != nil {
 		log.Printf("Could not expire cache item: %s", err)
+		return
 	}
 }
 
@@ -90,6 +108,7 @@ func (rc *RedisCache) Iter() <-chan CacheItem {
 			log.Printf("Could not get keys: %s", err)
 		}
 		var keys []string
+		var ci CacheItem
 		redis.ScanSlice(resp, &keys)
 		for _, key := range keys {
 			value, err := redis.String(rc.rdb.Do("GET", key))
@@ -97,7 +116,12 @@ func (rc *RedisCache) Iter() <-chan CacheItem {
 				log.Printf("Could not get key's value: %s", err)
 				continue
 			}
-			c <- CacheItem{strings.TrimPrefix(key, "cacheitem:"), value}
+			err = json.Unmarshal([]byte(value), &ci)
+			if err != nil {
+				log.Printf("Could not decode cache item: %s", err)
+				continue
+			}
+			c <- ci
 		}
 	}()
 	return c
