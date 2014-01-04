@@ -39,7 +39,7 @@ func main() {
 	http.Handle("/github.com/", http.StripPrefix("/github.com", NewGithub(cache)))
 	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("go-get") == "1" {
-			RenderGoImportMeta(w, r, cache.Iter())
+			RenderGoImport(w, r, cache.Iter())
 			return
 		}
 		staticHandler.ServeHTTP(w, r)

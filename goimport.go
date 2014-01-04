@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func RenderGoImportMeta(w http.ResponseWriter, r *http.Request, c <-chan CacheItem) {
+func RenderGoImport(w http.ResponseWriter, r *http.Request, c <-chan CacheItem) {
 	fmt.Fprintf(w, "<head>")
 	for item := range c {
 		fmt.Fprintf(w, `<meta name="go-import" content="%[1]s/%[2]s git http://%[1]s%[3]s">`, r.Host, item.ImportPath, item.RepoUrl)
@@ -13,11 +13,11 @@ func RenderGoImportMeta(w http.ResponseWriter, r *http.Request, c <-chan CacheIt
 	fmt.Fprintf(w, "</head>")
 }
 
-func RenderSingleGoImportMeta(w http.ResponseWriter, r *http.Request, ci CacheItem) {
+func RenderSingleGoImport(w http.ResponseWriter, r *http.Request, ci CacheItem) {
 	c := make(chan CacheItem)
 	go func() {
 		c <- ci
 		close(c)
 	}()
-	RenderGoImportMeta(w, r, c)
+	RenderGoImport(w, r, c)
 }

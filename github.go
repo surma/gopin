@@ -44,12 +44,12 @@ func (g *Github) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			RepoUrl:    path.Join("/github.com", repo, hash),
 		}
 		g.cache.Add(ci)
-		RenderSingleGoImportMeta(w, r, ci)
+		RenderSingleGoImport(w, r, ci)
 		return
 	}
 
-	// Any request will be proxied to Github in th end. Only a request
-	// for `/info/refs` will experience some initial manipulation.
+	// Any request will be forwarded to Github. Only a request
+	// for `/info/refs` will be manipulated.
 
 	// Open connection to Github webserver.
 	sc, err := tls.Dial("tcp4", "github.com:443", &tls.Config{
@@ -79,7 +79,7 @@ func (g *Github) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.Host = "github.com"
 	r.Write(sc)
 
-	// Forward client data to Github unchanged.
+	// Forward client unchanged data to Github.
 	go io.Copy(sc, cc)
 
 	scr := io.Reader(sc)
