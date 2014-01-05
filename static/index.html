@@ -45,21 +45,42 @@
           <div class="panel-body">
           <p><b>The good:</b></p>
             <ul>
-              <li>GoPin is <a href="https://github.com/surma/gopin">open source</a> and MIT licensed</li>
-              <li>No local tools are needed</li>
-              <li>Your projects remain <code>go get</code>-able</li>
-              <li>No additional strain on the maintainer’s or the user’s side</li>
+              <li>
+                GoPin is <a href="https://github.com/surma/gopin">open source</a>
+                and MIT licensed
+              </li>
+              <li>
+                No local tools are needed
+              </li>
+              <li>
+                Your projects remain <code>go get</code>-able
+              </li>
+              <li>
+                No additional strain on the maintainer’s or the user’s side
+              </li>
             </ul>
           <p><b>The bad:</b></p>
           <ul>
-            <li>Only Github is supported (others soon™)</li>
-            <li>Only <em>full</em> commit hashes are supported (tags soon™)</li>
+            <li>
+              Only Github is supported (others soon™)
+            </li>
+            <li>
+              Only <em>full</em> commit hashes are supported (tags soon™)
+            </li>
           </ul>
          <p><b>The ugly:</b></p>
           <ul>
-            <li>Using GoPin will result in having a new clone in your <code>$GOPATH</code> for each pinned import</li>
-            <li>GoPin will not work with private repositories (but neither will <code>go get</code>)</li>
-            <li>Prone to force-pushes (what isn’t?)</li>
+            <li>
+              Using GoPin will result in having a new clone in your
+              <code>$GOPATH</code> for each pinned import
+            </li>
+            <li>
+              GoPin will not work with private repositories (but
+              neither will <code>go get</code>)
+            </li>
+            <li>
+              Prone to force-pushes (what isn’t?)
+            </li>
           </ul>
           </div>
         </div>
@@ -70,13 +91,19 @@
             <h3 class="panel-title">How does it work?</h3>
           </div>
           <div class="panel-body">
-            <p>GoPin acts as a man in the middle between the <code>go</code> tool and
-            Github. It parses the data stream while the repository is being cloned.
-            When the position of the <code>master</code> branch is being transmitted,
-            GoPin injects the given hash.</p>
-            <p>Since <code>gopin.org</code> is not natively supported by the <code>go</code> tool,
-            the <a href="http://golang.org/cmd/go/#hdr-Remote_import_path_syntax">custom remote import</a>
-            feature is used to make the <code>go</code> tool behave just as you would expect.
+            <p>
+              GoPin acts as a man in the middle between the <code>go</code>
+              tool and Github. It parses the data stream while the repository
+              is being cloned. When the position of the <code>master</code>
+              branch is being transmitted, GoPin injects the given hash.
+            </p>
+            <p>
+              In contrast to <code>github.com</code>, <code>gopin.org</code>
+              is not natively supported by the <code>go</code> tool. The
+              <a href="http://golang.org/cmd/go/#hdr-Remote_import_path_syntax">custom remote import</a>
+              feature is used to make the <code>go</code> tool know where to
+              find the repository for any given import path.
+            </p>
           </div>
         </div>
       </div>
