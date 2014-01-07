@@ -28,3 +28,12 @@ pre[data-lang]::after {
 	text-transform: uppercase;
 	text-align: center;
 }
+
+footer {
+	line-height: 2em;
+}
+
+footer > iframe {
+	margin-left: 5px !important;
+	vertical-align: middle;
+}
