@@ -12,7 +12,7 @@
   <link href="css/custom.css" rel="stylesheet" media="screen">
 </head>
 <body>
-  <a href="https://github.com/surma/gopin"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
+  <a href="https://github.com/surma/gopin"><img style="position: absolute; top: 0; right: 0; border: 0; width: 149px; height: 149px;" src="http://aral.github.com/fork-me-on-github-retina-ribbons/right-graphite@2x.png" alt="Fork me on GitHub"></a>
   <div class="container">
   <div class="page-header">
         <h1>GoPin <small>Tool-less version pinning for Go</small></h1>
@@ -20,8 +20,7 @@
     <div class="jumbotron">
       <div class="container">
         <p>
-          Ever used a package by some idiot who doesn’t maintain
-          backwards compatibility?
+          Ever used a package which broke backwards compatibility?
         </p>
         <pre data-lang="go"><b class="text-warning">import</b> (
     "github.com/surma/httptools"
@@ -76,8 +75,7 @@
               <code>$GOPATH</code> for each pinned import
             </li>
             <li>
-              GoPin will not work with private repositories (but
-              neither will <code>go get</code>)
+              GoPin will not work with private repositories 
             </li>
             <li>
               Prone to force-pushes (what isn’t?)
@@ -101,7 +99,7 @@
             <p>
               In contrast to <code>github.com</code>, <code>gopin.org</code>
               is not natively supported by the <code>go</code> tool. The
-              <a href="http://golang.org/cmd/go/#hdr-Remote_import_path_syntax">custom remote import</a>
+              <a href="http://golang.org/cmd/go/#hdr-Remote_import_paths">custom remote import</a>
               feature is used to make the <code>go</code> tool know where to
               find the repository for any given import path.
             </p>
